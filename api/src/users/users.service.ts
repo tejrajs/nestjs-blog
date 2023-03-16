@@ -1,26 +1,85 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from './entities/user.entity';
+import { UserStatus } from './enum/user.status';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  
+  constructor(@InjectRepository(User) private readonly repo: Repository<User>){}
+
+  async create(createUserDto: CreateUserDto) : Promise<User>{
+    try{
+      const user = new User();
+      Object.assign(user, createUserDto);
+      
+      this.repo.create(user);
+      return await this.repo.save(user);
+    }catch(err){
+      throw err
+    }
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findAll() : Promise<User[]>{
+    return await this.repo.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: number) : Promise<User>{
+    try {
+      const user = await this.repo.findOneBy({ id });
+      if (!user) {
+        throw new BadRequestException('user not found');
+      }
+      return user;
+    } catch (err) {
+      throw err;
+    }
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async findUser(username: string) : Promise<User>{
+    try {
+      const user = await this.repo.findOneBy({ username: username,  status: UserStatus.ACTIVE});
+      if (!user) {
+        throw new BadRequestException('user not found');
+      }
+      return user;
+    } catch (err) {
+      throw err;
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async update(id: number, updateUserDto: UpdateUserDto) : Promise<User>{
+    try {
+      const user = await this.findOne(id);
+
+      Object.assign(user, updateUserDto);
+      return this.repo.save(user);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async updateTask(id: number, status: UserStatus) : Promise<User>{
+    try {
+      const user = await this.findOne(id);
+      user.status = status;
+      Object.assign(user, status);
+      return this.repo.save(user);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async remove(id: number) {
+    try {
+      const user = await this.findOne(id);
+      await this.repo.remove(user);
+      return { success: true, user };
+    } catch (err) {
+      throw err;
+    }
   }
 }

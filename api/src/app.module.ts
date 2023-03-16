@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppService } from './app.service';
 import { DatabaseModule } from './config/database';
 import { PostModule } from './post/post.module';
