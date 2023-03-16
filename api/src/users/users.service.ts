@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
+import { GetUsersFilterDto } from './dto/get-users-filter.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { UserStatus } from './enum/user.status';
@@ -25,6 +26,20 @@ export class UsersService {
 
   async findAll() : Promise<User[]>{
     return await this.repo.find();
+  }
+
+  async getUserWithFilters(filterDto: GetUsersFilterDto): Promise<User[]>{
+    const {status, search} =  filterDto;
+    const query = this.repo.createQueryBuilder('users');
+    if(status){
+      query.andWhere('users.status = :status', {status})
+    }
+
+    if(search){
+      query.andWhere('users.username LIKE :search OR users.email LIKE :search', {search: `%${search}%`})
+    }
+    const users = await query.getMany();
+    return users;
   }
 
   async findOne(id: number) : Promise<User>{
